@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Gravy Robot</title>
+<meta name="description" content="Something is being made.">
+
+<!-- Three-bar motif as favicon: gold, rust, pink -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FDFCF7'/%3E%3Crect x='12' y='5' width='18' height='6' rx='1' fill='%23F4C21B'/%3E%3Crect x='2' y='13' width='28' height='6' rx='1' fill='%238E2B22'/%3E%3Crect x='7' y='21' width='23' height='6' rx='1' fill='%23E93B7A'/%3E%3C/svg%3E">
+
+<style>
+/* ───────────────────────────────────────────────
+   Tokens — from the style tile.
+   Type stacks are declared but no webfont is
+   loaded: the page has no visible text yet. When
+   copy arrives, add:
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+   ─────────────────────────────────────────────── */
+:root{
+  --gold:#F4C21B;
+  --green:#1C6B4E;
+  --pink:#E93B7A;
+  --rust:#8E2B22;
+  --ink:#181613;
+  --muted:#5a5650;
+  --line:#E7E1D0;
+  --bg:#FDFCF7;
+  --surface:#FFFFFF;
+
+  --font-display:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --column:680px;   /* cream column */
+  --stage:620px;    /* card + swatches */
+  --bleed:15px;     /* how far the stage overhangs the column, left */
+  --radius:24px;
+
+  /* Askew. Three independent tilts — the column leans one way, the gold
+     card the other, and the hairline splits the difference so it crosses
+     the card rather than tracking it. Tune these three freely; nothing
+     else depends on them. */
+  --tilt-column:-0.9deg;
+  --tilt-card:-1.4deg;
+  --tilt-outline:0.7deg;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  min-height:100dvh;
+  background:var(--line);
+  color:var(--ink);
+  font-family:var(--font-body);
+}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;
+}
+
+/* Beige page, cream column running full height behind the content. */
+.page{
+  position:relative;
+  min-height:100dvh;
+  display:flex;
+  justify-content:center;
+  padding:clamp(40px,9vh,96px) 24px 64px;
+}
+/* Overhangs the viewport top and bottom so that tilting it never brings
+   its own slanted ends into view — you see a leaning column, not a
+   rotated rectangle. */
+.page::before{
+  content:"";
+  position:absolute;
+  top:-12vh;bottom:-12vh;left:50%;
+  width:min(var(--column),100%);
+  transform:translateX(-50%) rotate(var(--tilt-column));
+  background:var(--bg);
+}
+
+/* The stage sits left of true centre so the card and the palette
+   overhang the cream column — the deliberate off-register. Both the
+   column and the stage are centred fixed widths, so this offset holds
+   the same bleed at every viewport width.
+
+   Offset with `left`, not a negative margin: a negative margin on a
+   centred flex item shifts it only half as far, because centring
+   compensates for the smaller outer width. `left` also leaves
+   `transform` free for the entrance animation. */
+.stage{
+  position:relative;
+  width:min(var(--stage),100%);
+  left:calc(-1 * ((var(--column) - var(--stage)) / 2 + var(--bleed)));
+}
+
+/* ── Card ──
+   The gold fill is its own layer rather than the container, so the card
+   can tilt while Roux stays upright. The group holds the geometry; the
+   three children each tilt (or don't) on their own. */
+.card-group{
+  position:relative;
+  aspect-ratio:2 / 1;
+}
+
+.card-fill{
+  position:absolute;
+  inset:0;
+  background:var(--gold);
+  border-radius:var(--radius);
+  transform:rotate(var(--tilt-card));
+}
+
+/* Offset hairline: reads white over the gold, a whisper over the cream.
+   The offset is a percentage of the card, not a fixed pixel value, so it
+   stays visually identical at every width — a fixed 18px is 3% of a
+   desktop card but 5% of a phone card, and crowds the screen edge. */
+.card-outline{
+  position:absolute;
+  inset:0;
+  border:1.5px solid var(--line);
+  border-radius:var(--radius);
+  transform:translate(2.9%,-3.9%) rotate(var(--tilt-outline));
+  pointer-events:none;
+}
+
+/* Roux spills past the bottom edge — the ball breaks the frame.
+   The art carries a soft transparent vignette on all sides, so the
+   box is sized larger than the robot looks: ~92% of the height and
+   ~94% of the width is actual ink. */
+.roux{
+  position:absolute;
+  right:10%;
+  bottom:-10%;
+  height:104%;
+  width:auto;
+  display:block;
+}
+
+/* ── Palette ── */
+.swatches{
+  display:flex;
+  flex-wrap:wrap;
+  gap:11px;
+  margin:clamp(48px,17%,132px) 0 0;
+  padding:0;
+  list-style:none;
+}
+.swatches li{
+  width:24px;
+  height:24px;
+  border-radius:5px;
+  background:var(--c);
+}
+/* The one light chip needs an edge or it dissolves into the column. */
+.swatches li.edge{box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+
+/* ── Motion ── the ball is never quite still ── */
+@media (prefers-reduced-motion:no-preference){
+  .stage{animation:rise .9s cubic-bezier(.2,.7,.3,1) both}
+  .roux{animation:bob 6s ease-in-out 1s infinite}
+  @keyframes rise{
+    from{opacity:0;transform:translateY(14px)}
+    to{opacity:1;transform:none}
+  }
+  @keyframes bob{
+    0%,100%{transform:translateY(0) rotate(0deg)}
+    50%{transform:translateY(-6px) rotate(-.6deg)}
+  }
+}
+
+/* ── Narrow ── drop the gutters, let the cream fill ── */
+@media (max-width:760px){
+  body{background:var(--bg)}
+  .page{padding:clamp(32px,7vh,64px) 20px 48px}
+  .page::before{display:none}
+  .stage{left:0}
+  :root{--radius:18px}
+  .roux{right:5%;height:90%}
+  .swatches li{width:20px;height:20px;border-radius:4px}
+}
+
+/* Very short landscape windows: keep the card from eating the viewport. */
+@media (max-height:520px) and (min-width:761px){
+  .page{padding-top:32px}
+  .stage{width:min(520px,100%)}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <main class="stage">
+    <h1 class="sr-only">Gravy Robot</h1>
+
+    <!-- Order is paint order: gold fill, then the hairline, then Roux on
+         top so the line passes behind him rather than cutting across. -->
+    <div class="card-group">
+      <div class="card-fill"></div>
+      <div class="card-outline"></div>
+      <img class="roux"
+           src="assets/roux-sketch.webp"
+           width="800" height="1200"
+           alt="Roux, a gravy-boat robot with a whisk for one hand, balancing on a ball."
+           fetchpriority="high" decoding="async">
+    </div>
+
+    <ul class="swatches" aria-hidden="true">
+      <li style="--c:#F4C21B"></li>
+      <li style="--c:#1C6B4E"></li>
+      <li style="--c:#E93B7A"></li>
+      <li style="--c:#8E2B22"></li>
+      <li style="--c:#181613"></li>
+      <li style="--c:#5a5650"></li>
+      <li style="--c:#E7E1D0" class="edge"></li>
+    </ul>
+  </main>
+</div>
+
+</body>
+</html>
