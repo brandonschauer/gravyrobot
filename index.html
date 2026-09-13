@@ -10,14 +10,18 @@
 <!-- Three-bar motif as favicon: gold, rust, pink -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FDFCF7'/%3E%3Crect x='12' y='5' width='18' height='6' rx='1' fill='%23F4C21B'/%3E%3Crect x='2' y='13' width='28' height='6' rx='1' fill='%238E2B22'/%3E%3Crect x='7' y='21' width='23' height='6' rx='1' fill='%23E93B7A'/%3E%3C/svg%3E">
 
+<!-- IBM Plex Mono Bold, for the name the rust chip writes onto the card. -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@700&display=swap">
+
 <style>
 /* ───────────────────────────────────────────────
    Tokens — from the style tile.
-   Type stacks are declared but no webfont is
-   loaded: the page has no visible text yet. When
-   copy arrives, add:
-   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+   Only IBM Plex Mono Bold is loaded, for the
+   name the rust chip writes on the card. The
+   other stacks are declared but not loaded yet;
+   when more copy arrives, widen the font link:
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;700&display=swap">
    ─────────────────────────────────────────────── */
 :root{
   --gold:#F4C21B;
@@ -46,6 +50,11 @@
   --tilt-column:-0.9deg;
   --tilt-card:-1.4deg;
   --tilt-outline:0.7deg;
+  /* The name's two words lean against each other. These are relative to
+     the card, which adds its own tilt: net on screen ≈ -3.8° and +2.5°,
+     read off the mockup. */
+  --tilt-word-1:-2.4deg;
+  --tilt-word-2:3.9deg;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -70,6 +79,14 @@ body{
   display:flex;
   justify-content:center;
   padding:clamp(40px,9vh,96px) 24px 64px;
+  /* Clip to the page's own edges, both ways. Mid-spin the card swings past
+     its resting width, and the pink chip's loop takes it past the top and
+     bottom; unclipped, both would briefly enlarge the document and flash a
+     scrollbar in (which, on Windows, also nudges the layout sideways).
+     The page starts at the top of the viewport and is at least as tall as
+     it, so the leaning column's overhang is cut exactly at the screen
+     edges, where the cut can't be seen. */
+  overflow:clip;
 }
 /* Overhangs the viewport top and bottom so that tilting it never brings
    its own slanted ends into view — you see a leaning column, not a
@@ -81,6 +98,7 @@ body{
   width:min(var(--column),100%);
   transform:translateX(-50%) rotate(var(--tilt-column));
   background:var(--bg);
+  transition:background-color .6s ease;
 }
 
 /* The stage sits left of true centre so the card and the palette
@@ -105,6 +123,10 @@ body{
 .card-group{
   position:relative;
   aspect-ratio:2 / 1;
+  /* A size container, so the name on the card can be sized in cqi — a
+     share of the card's width — and keep the mockup's proportions at any
+     screen size. */
+  container-type:inline-size;
 }
 
 .card-fill{
@@ -120,12 +142,58 @@ body{
    stays visually identical at every width — a fixed 18px is 3% of a
    desktop card but 5% of a phone card, and crowds the screen edge. */
 .card-outline{
+  --hairline:1.5px;
   position:absolute;
   inset:0;
-  border:1.5px solid var(--line);
+  border:var(--hairline) solid var(--line);
   border-radius:var(--radius);
   transform:translate(2.9%,-3.9%) rotate(var(--tilt-outline));
   pointer-events:none;
+}
+
+/* Skyline: one line walked edge to edge across the outline, drawn by the
+   muted chip. It lives inside the outline, so it takes the outline's
+   offset and tilt and passes behind Roux just as the hairline does, in the
+   hairline's own colour and weight.
+
+   The SVG covers the outline's full border box (the border sits inside the
+   element's box, hence the negative offset), so the line starts and ends
+   on the outline's own edges. The path is drawn in a 200x100 box that
+   stretches to fit; the outline is always 2:1, so it scales evenly.
+
+   Draw, then erase from the left: one dash exactly as long as the path,
+   followed by an equal gap. Offset by its full length, the dash sits just
+   before the start, hidden. Sliding it to 0 draws the line from left to
+   right; sliding on to minus its length carries it off the far end, so the
+   gap opens from the left. The script measures --len and sets a --stroke
+   that comes out at the hairline's on-screen weight after the stretch.
+   Hidden between runs, so no line shows before the first click. A reveal
+   rather than movement, so it runs with reduced motion on too. */
+.skyline{
+  position:absolute;
+  left:calc(-1 * var(--hairline));
+  top:calc(-1 * var(--hairline));
+  width:calc(100% + 2 * var(--hairline));
+  height:calc(100% + 2 * var(--hairline));
+  overflow:visible;
+}
+.skyline path{
+  fill:none;
+  stroke:var(--line);
+  stroke-width:var(--stroke);
+  stroke-linejoin:round;
+  stroke-linecap:round;
+  visibility:hidden;
+}
+.skyline path.is-drawing{
+  visibility:visible;
+  stroke-dasharray:var(--len) var(--len);
+  animation:skyline-draw 5s linear;
+}
+@keyframes skyline-draw{
+  0%  {stroke-dashoffset:var(--len);                animation-timing-function:cubic-bezier(.45,0,.55,1)}
+  60% {stroke-dashoffset:0;                         animation-timing-function:cubic-bezier(.45,0,.55,1)}  /* reaches the right edge */
+  100%{stroke-dashoffset:calc(-1 * var(--len))}
 }
 
 /* Roux spills past the bottom edge — the ball breaks the frame.
@@ -150,19 +218,215 @@ body{
   padding:0;
   list-style:none;
 }
+/* The <li> is a fixed hit area; the colour lives on ::before, which is what
+   moves. Transforming the <li> itself would make a shrinking chip slide out
+   from under a cursor near its edge, ending the hover and starting a flicker
+   loop. Each chip sets its own hover --r (rotation) and --s (scale) inline,
+   along with its --orbit-tilt and --orbit-dir for the ink chip's orbit. */
 .swatches li{
+  position:relative;
   width:24px;
   height:24px;
+}
+.swatches li::before{
+  content:"";
+  position:absolute;
+  inset:0;
   border-radius:5px;
   background:var(--c);
+  transition:background-color .6s ease;
 }
 /* The one light chip needs an edge or it dissolves into the column. */
-.swatches li.edge{box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.swatches li.edge::before{box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+
+/* Light chip: a switch rather than a one-off. Clicking it swaps the column
+   and the chip between the page's two light colours, and they stay swapped
+   until the next click. The state is a class on <body>, so the phone layout
+   (no column; the cream is the page itself) can swap its background too.
+   The edge above keeps the chip distinct in both states. A colour change,
+   not movement, so its cross-fade runs with reduced motion on too. */
+body.is-swapped .page::before{background:var(--line)}
+body.is-swapped .swatches li.edge::before{background:var(--bg)}
+
+/* Hover-capable pointers only: on touch screens a tap leaves :hover stuck
+   on until the next tap elsewhere. */
+@media (hover:hover){
+  .swatches li:hover::before{transform:rotate(var(--r)) scale(var(--s))}
+}
+
+/* Clickable chips carry a button laid over their own swatch: same hit area,
+   so the hover tilt above still comes from the <li>. */
+.swatch-trigger{
+  position:absolute;
+  inset:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.swatch-trigger:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+/* Click mark: a dot in the button's --pip colour that starts solid and fades
+   out. Deliberately not behind the reduced-motion gate — it's an opacity
+   change, not movement — and the script removes each dot when it ends. */
+.pip{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:8px;
+  height:8px;
+  margin:-4px 0 0 -4px;
+  border-radius:50%;
+  background:var(--pip);   /* set per button */
+  pointer-events:none;
+  animation:pip-fade 1.6s ease-out forwards;
+}
+@keyframes pip-fade{
+  from{opacity:1}
+  to{opacity:0}
+}
+
+/* Forest: a green layer with eight pines cut out of it, so the card's own
+   gold shows through as the trees. It lives inside .card-fill, so it tilts
+   with the card and turns with it if the spin is running. The mask is drawn
+   in a 200x100 box to match the card's fixed 2:1 aspect, so stretching it to
+   fit never distorts the trees. A fade rather than movement, so it also runs
+   for visitors who have reduced motion turned on. */
+.card-forest{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:var(--green);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Crect width='200' height='100' fill='white'/%3E%3Cpath fill='black' d='M12 30.5 19.3 51.5 15.4 51.5 22.6 71.1 17 71.1 26 90.7 14 90.7 14 100.5 10 100.5 10 90.7 -2 90.7 7 71.1 1.4 71.1 8.6 51.5 4.7 51.5ZM37 50.5 42.2 65.5 39.4 65.5 44.6 79.5 40.6 79.5 47 93.5 38.4 93.5 38.4 100.5 35.6 100.5 35.6 93.5 27 93.5 33.4 79.5 29.4 79.5 34.6 65.5 31.8 65.5ZM62 18.5 70.5 43.1 65.9 43.1 74.5 66.1 67.9 66.1 78.4 89 64.3 89 64.3 100.5 59.7 100.5 59.7 89 45.6 89 56.1 66.1 49.5 66.1 58.1 43.1 53.5 43.1ZM87 44.5 92.8 61.3 89.7 61.3 95.5 77 91 77 98.2 92.7 88.6 92.7 88.6 100.5 85.4 100.5 85.4 92.7 75.8 92.7 83 77 78.5 77 84.3 61.3 81.2 61.3ZM112 26.5 119.7 48.7 115.6 48.7 123.2 69.4 117.3 69.4 126.8 90.1 114.1 90.1 114.1 100.5 109.9 100.5 109.9 90.1 97.2 90.1 106.7 69.4 100.8 69.4 108.4 48.7 104.3 48.7ZM137 52.5 142 66.9 139.3 66.9 144.3 80.3 140.5 80.3 146.6 93.8 138.3 93.8 138.3 100.5 135.7 100.5 135.7 93.8 127.4 93.8 133.5 80.3 129.7 80.3 134.7 66.9 132 66.9ZM162 20.5 170.3 44.5 165.8 44.5 174.2 66.9 167.8 66.9 178 89.3 164.2 89.3 164.2 100.5 159.8 100.5 159.8 89.3 146 89.3 156.2 66.9 149.8 66.9 158.2 44.5 153.7 44.5ZM187 42.5 193 59.9 189.8 59.9 195.8 76.1 191.2 76.1 198.6 92.4 188.6 92.4 188.6 100.5 185.4 100.5 185.4 92.4 175.4 92.4 182.8 76.1 178.2 76.1 184.2 59.9 181 59.9Z'/%3E%3C/mask%3E%3Crect width='200' height='100' mask='url(%23m)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Crect width='200' height='100' fill='white'/%3E%3Cpath fill='black' d='M12 30.5 19.3 51.5 15.4 51.5 22.6 71.1 17 71.1 26 90.7 14 90.7 14 100.5 10 100.5 10 90.7 -2 90.7 7 71.1 1.4 71.1 8.6 51.5 4.7 51.5ZM37 50.5 42.2 65.5 39.4 65.5 44.6 79.5 40.6 79.5 47 93.5 38.4 93.5 38.4 100.5 35.6 100.5 35.6 93.5 27 93.5 33.4 79.5 29.4 79.5 34.6 65.5 31.8 65.5ZM62 18.5 70.5 43.1 65.9 43.1 74.5 66.1 67.9 66.1 78.4 89 64.3 89 64.3 100.5 59.7 100.5 59.7 89 45.6 89 56.1 66.1 49.5 66.1 58.1 43.1 53.5 43.1ZM87 44.5 92.8 61.3 89.7 61.3 95.5 77 91 77 98.2 92.7 88.6 92.7 88.6 100.5 85.4 100.5 85.4 92.7 75.8 92.7 83 77 78.5 77 84.3 61.3 81.2 61.3ZM112 26.5 119.7 48.7 115.6 48.7 123.2 69.4 117.3 69.4 126.8 90.1 114.1 90.1 114.1 100.5 109.9 100.5 109.9 90.1 97.2 90.1 106.7 69.4 100.8 69.4 108.4 48.7 104.3 48.7ZM137 52.5 142 66.9 139.3 66.9 144.3 80.3 140.5 80.3 146.6 93.8 138.3 93.8 138.3 100.5 135.7 100.5 135.7 93.8 127.4 93.8 133.5 80.3 129.7 80.3 134.7 66.9 132 66.9ZM162 20.5 170.3 44.5 165.8 44.5 174.2 66.9 167.8 66.9 178 89.3 164.2 89.3 164.2 100.5 159.8 100.5 159.8 89.3 146 89.3 156.2 66.9 149.8 66.9 158.2 44.5 153.7 44.5ZM187 42.5 193 59.9 189.8 59.9 195.8 76.1 191.2 76.1 198.6 92.4 188.6 92.4 188.6 100.5 185.4 100.5 185.4 92.4 175.4 92.4 182.8 76.1 178.2 76.1 184.2 59.9 181 59.9Z'/%3E%3C/mask%3E%3Crect width='200' height='100' mask='url(%23m)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  opacity:0;
+  pointer-events:none;
+}
+.card-forest.is-showing{animation:forest-fade 3.6s ease-in-out}
+@keyframes forest-fade{
+  0%{opacity:0}
+  22%{opacity:1}   /* ~0.8s in */
+  68%{opacity:1}   /* hold ~1.7s */
+  100%{opacity:0}  /* ~1.2s back to gold */
+}
+
+/* Name: "Gravy" over "Robot", written onto the card a letter at a time.
+   Inside .card-fill, after the forest, so it tilts and turns with the card
+   and sits on top of the trees. Position and size are shares of the card,
+   measured off the mockup: 13cqi of a 620px card is the mockup's ~80px.
+   The script splits each word into .ch spans and gives every letter its
+   own random --in and --out delay per run. Until it has done that, the
+   words stay hidden, so without JavaScript nothing sits on the card. */
+.card-words{
+  position:absolute;
+  left:8.5%;
+  top:23%;
+  font-family:var(--font-mono);
+  font-weight:700;
+  font-size:13cqi;
+  line-height:1.02;
+  pointer-events:none;
+}
+.card-words:not(.is-ready){visibility:hidden}
+.card-words .word{
+  display:block;
+  white-space:nowrap;
+  transform-origin:0 50%;
+}
+.card-words .word:nth-child(1){color:var(--pink);transform:rotate(var(--tilt-word-1))}
+.card-words .word:nth-child(2){color:var(--rust);transform:rotate(var(--tilt-word-2))}
+.card-words .ch{opacity:0}
+
+/* Each letter runs two animations. ch-in fills both ways, so a letter is
+   held invisible until its own moment; ch-out fills forwards only, so it
+   doesn't take over until that letter's fade-out begins, then holds it
+   gone. The container's no-op clock runs for the whole sequence, and its
+   end is what tells the script the run is over — the letters' own events
+   finish one at a time, too early to act on. A fade, not movement, so it
+   runs for reduced-motion visitors too. */
+.card-words.is-writing{animation:words-clock var(--total) linear}
+.card-words.is-writing .ch{
+  animation:
+    ch-in  var(--in-dur)  ease-out var(--in)  both,
+    ch-out var(--out-dur) ease-in  var(--out) forwards;
+}
+@keyframes ch-in{from{opacity:0}to{opacity:1}}
+@keyframes ch-out{from{opacity:1}to{opacity:0}}
+@keyframes words-clock{from{opacity:1}to{opacity:1}}
 
 /* ── Motion ── the ball is never quite still ── */
 @media (prefers-reduced-motion:no-preference){
   .stage{animation:rise .9s cubic-bezier(.2,.7,.3,1) both}
   .roux{animation:bob 6s ease-in-out 1s infinite}
+  /* No overshoot in the easing, so a chip never passes its ±15° / ±15%. */
+  .swatches li::before{transition:transform .22s cubic-bezier(.2,.7,.3,1), background-color .6s ease}
+
+  /* One full turn about a vertical axis 8% left of centre. The axis is
+     offset with a translate pair rather than transform-origin, so the
+     card's resting tilt pivots exactly where it always has and the first
+     and last frames match the resting card — no jump at either end.
+     The card isn't in a preserve-3d context, so it stays flattened behind
+     the hairline and Roux for the whole turn. */
+  .card-fill.is-spinning{animation:card-spin 1.4s cubic-bezier(.65,0,.35,1)}
+  @keyframes card-spin{
+    from{transform:perspective(1800px) rotate(var(--tilt-card)) translateX(-8%) rotateY(0deg)   translateX(8%)}
+    to  {transform:perspective(1800px) rotate(var(--tilt-card)) translateX(-8%) rotateY(360deg) translateX(8%)}
+  }
+
+  /* Pink chip: up and out the top of the page, a beat off-screen, then in
+     from the bottom and back into its slot. The script measures --fly-out
+     and --fly-in at click time, since both depend on where the chip sits
+     and how tall the page is. The whole <li> moves, so the button and its
+     click dot travel with it; siblings don't shift, because a transform
+     doesn't affect layout.
+     Per-keyframe easing: accelerate out (0–42%), then a step-end segment
+     that holds the chip above the page and swaps it to below in a single
+     frame (42–50%) so it never flashes across the middle, then decelerate
+     back into place (50–100%). */
+  /* Ink chip: the other six orbit it, one full turn each, all landing
+     together and slowing into place.
+
+     Each chip sets --orbit-tilt and --orbit-dir inline. The tilt sets its
+     rotation axis within the y–z plane: 0deg spins it about the vertical, so
+     it swings through depth, in front of and behind the ink chip; 90deg
+     spins it about the line of sight, a flat circle on screen. Keeping every
+     axis in that plane is what makes each path a true circle centred on the
+     ink chip — an axis tipped toward x would put the chip on a cone instead.
+
+     Transform, right to left: counter-rotate the chip about its own centre;
+     move the pivot (the ink chip's centre, --to-pivot away, measured per
+     click) to the origin; rotate; move back. The chip travels the circle
+     while the counter-rotation keeps it facing the viewer, so depth reads
+     through perspective — nearer and larger, farther and smaller — rather
+     than the square turning edge-on.
+
+     While any chip orbits, the row becomes a 3D scene with its vanishing
+     point on the ink chip, and preserve-3d sorts the chips by depth so the
+     ones on the far side really pass behind it. */
+  .swatches li{--orbit-axis:0, cos(var(--orbit-tilt)), sin(var(--orbit-tilt))}
+  .swatches:has(li.is-orbiting){
+    perspective:600px;
+    perspective-origin:var(--pivot-x) 50%;
+    transform-style:preserve-3d;
+  }
+  .swatches li.is-orbiting{animation:swatch-orbit 2.4s cubic-bezier(.5,0,.15,1)}
+  @keyframes swatch-orbit{
+    from{transform:translateX(var(--to-pivot)) rotate3d(var(--orbit-axis), 0deg)
+                   translateX(calc(-1 * var(--to-pivot))) rotate3d(var(--orbit-axis), 0deg)}
+    to  {transform:translateX(var(--to-pivot)) rotate3d(var(--orbit-axis), calc(360deg * var(--orbit-dir)))
+                   translateX(calc(-1 * var(--to-pivot))) rotate3d(var(--orbit-axis), calc(-360deg * var(--orbit-dir)))}
+  }
+
+  .swatches li.is-looping{animation:swatch-loop 1.8s linear}
+  @keyframes swatch-loop{
+    0%  {transform:translateY(0);              animation-timing-function:cubic-bezier(.55,0,1,.45)}
+    42% {transform:translateY(var(--fly-out)); animation-timing-function:step-end}
+    50% {transform:translateY(var(--fly-in));  animation-timing-function:cubic-bezier(0,.55,.45,1)}
+    100%{transform:translateY(0)}
+  }
   @keyframes rise{
     from{opacity:0;transform:translateY(14px)}
     to{opacity:1;transform:none}
@@ -175,13 +439,15 @@ body{
 
 /* ── Narrow ── drop the gutters, let the cream fill ── */
 @media (max-width:760px){
-  body{background:var(--bg)}
+  body{background:var(--bg);transition:background-color .6s ease}
+  body.is-swapped{background:var(--line)}
   .page{padding:clamp(32px,7vh,64px) 20px 48px}
   .page::before{display:none}
   .stage{left:0}
   :root{--radius:18px}
   .roux{right:5%;height:90%}
-  .swatches li{width:20px;height:20px;border-radius:4px}
+  .swatches li{width:20px;height:20px}
+  .swatches li::before{border-radius:4px}
 }
 
 /* Very short landscape windows: keep the card from eating the viewport. */
@@ -200,8 +466,20 @@ body{
     <!-- Order is paint order: gold fill, then the hairline, then Roux on
          top so the line passes behind him rather than cutting across. -->
     <div class="card-group">
-      <div class="card-fill"></div>
-      <div class="card-outline"></div>
+      <div class="card-fill">
+        <div class="card-forest"></div>
+        <!-- The placeholder name, typed once. Hidden from screen readers:
+             the page's h1 already says it. -->
+        <div class="card-words" aria-hidden="true">
+          <span class="word">Gravy</span>
+          <span class="word">Robot</span>
+        </div>
+      </div>
+      <div class="card-outline">
+        <svg class="skyline" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <path d="M0 80 H5 V60 H15 V80 H18 V42 H22 V33 H31 V42 H35 V80 H38 V63 L44 55 L50 63 V80 H53 V37 H56 V29 L59.5 12 L63 29 V37 H66 V80 H70 V66 H73 V58 H79 V66 H84 V80 H87 V54 A8 8 0 0 1 103 54 V80 H106 V45 H109 V24 V45 H115 V80 H118 V51 H122 V46 H128 V51 H132 V80 H135 V47 L149 38 V80 H152 V61 H157 V53 H163 V61 H167 V80 H170 V35 H175 V21 V35 H180 V80 H183 V65 H194 V80 H200"/>
+        </svg>
+      </div>
       <img class="roux"
            src="assets/roux-sketch.webp"
            width="800" height="1200"
@@ -209,17 +487,189 @@ body{
            fetchpriority="high" decoding="async">
     </div>
 
-    <ul class="swatches" aria-hidden="true">
-      <li style="--c:#F4C21B"></li>
-      <li style="--c:#1C6B4E"></li>
-      <li style="--c:#E93B7A"></li>
-      <li style="--c:#8E2B22"></li>
-      <li style="--c:#181613"></li>
-      <li style="--c:#5a5650"></li>
-      <li style="--c:#E7E1D0" class="edge"></li>
+    <!-- Presentational list: the empty chips say nothing to a screen reader,
+         while the one button inside stays reachable. (aria-hidden on the list
+         would hide a focusable control, which assistive tech forbids.) -->
+    <ul class="swatches" role="presentation">
+      <li style="--c:#F4C21B; --r:12deg;  --s:1.12; --orbit-tilt:60deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="spin" style="--pip:var(--pink)" aria-label="Spin the card"></button></li>
+      <li style="--c:#1C6B4E; --r:-9deg;  --s:0.90; --orbit-tilt:0deg;   --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="forest" style="--pip:var(--line)" aria-label="Show the forest"></button></li>
+      <li style="--c:#E93B7A; --r:15deg;  --s:0.87; --orbit-tilt:120deg; --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="loop" style="--pip:var(--gold)" aria-label="Send the pink square around"></button></li>
+      <li style="--c:#8E2B22; --r:-14deg; --s:1.15; --orbit-tilt:90deg;  --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="words" style="--pip:var(--pink)" aria-label="Write the name on the card"></button></li>
+      <li style="--c:#181613; --r:6deg;   --s:1.08"><button class="swatch-trigger" type="button" data-effect="orbit" style="--pip:var(--gold)" aria-label="Set the squares orbiting"></button></li>
+      <li style="--c:#5a5650; --r:-11deg; --s:0.92; --orbit-tilt:30deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="skyline" style="--pip:var(--pink)" aria-label="Draw the skyline"></button></li>
+      <li style="--c:#E7E1D0; --r:8deg;   --s:0.86; --orbit-tilt:150deg; --orbit-dir:-1" class="edge"><button class="swatch-trigger" type="button" data-effect="swap" style="--pip:var(--green)" aria-label="Swap the light colours" aria-pressed="false"></button></li>
     </ul>
   </main>
 </div>
+
+<script>
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const page = document.querySelector('.page');
+  const card = document.querySelector('.card-fill');
+  const forest = document.querySelector('.card-forest');
+  const words = document.querySelector('.card-words');
+  const chipRow = document.querySelector('.swatches');
+  const chips = [...chipRow.children];
+  const chipFor = (effect) => document.querySelector(`[data-effect="${effect}"]`).closest('li');
+  const pinkChip = chipFor('loop');
+  const inkChip = chipFor('orbit');
+  const outline = document.querySelector('.card-outline');
+  const skyline = outline.querySelector('.skyline path');
+
+  // Split each word of the name into one span per letter, so every letter
+  // can come and go on its own. Done here rather than in the markup so the
+  // name stays typed once, as plain words, and is easy to change.
+  for (const word of words.querySelectorAll('.word')) {
+    word.replaceChildren(...[...word.textContent.trim()].map((ch) => {
+      const span = document.createElement('span');
+      span.className = 'ch';
+      span.textContent = ch;
+      return span;
+    }));
+  }
+  words.classList.add('is-ready');
+
+  const shuffle = (items) => items
+    .map((item) => [Math.random(), item])
+    .sort((a, b) => a[0] - b[0])
+    .map(([, item]) => item);
+
+  // Each swatch button names its effect in data-effect. An effect is one run
+  // of a CSS animation on one or more elements: the click puts the effect's
+  // class on each target, and each target's own animationend takes it off.
+  //   targets  the elements to animate this run
+  //   moves    skipped for visitors who have reduced motion on
+  //   blocked  optional; true when this run shouldn't start right now
+  //   prepare  optional; sets per-run values on the targets before they start
+  // A switch is simpler: it has only `toggle`, which flips a lasting state.
+  const effects = {
+    spin:   { cls: 'is-spinning', animation: 'card-spin',   moves: true,  targets: () => [card] },
+    forest: { cls: 'is-showing',  animation: 'forest-fade', moves: false, targets: () => [forest] },
+    loop: {
+      cls: 'is-looping', animation: 'swatch-loop', moves: true,
+      targets: () => [pinkChip],
+      // A chip runs one transform animation at a time, and the orbit uses
+      // transform too, so the pink loop waits while its chip is orbiting.
+      blocked: () => pinkChip.classList.contains('is-orbiting'),
+      prepare([el]) {
+        // Just past the page's top and bottom edges, from wherever the chip
+        // sits right now. The extra chip-height of travel clears its hover
+        // tilt and scale, so no corner is left peeking at either edge.
+        const p = page.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--fly-out', `${p.top - r.bottom - r.height}px`);
+        el.style.setProperty('--fly-in',  `${p.bottom - r.top + r.height}px`);
+      },
+    },
+    words: {
+      cls: 'is-writing', animation: 'words-clock', moves: false,
+      targets: () => [words],
+      prepare([el]) {
+        const IN_EVERY = 75, IN_JITTER = 40, IN_DUR = 120;   // letters pop in quickly
+        const HOLD = 1000;                                   // full name holds a second
+        const OUT_EVERY = 90, OUT_JITTER = 40, OUT_DUR = 350; // then fade away
+        const letters = [...el.querySelectorAll('.ch')];
+
+        // A fresh random order each run: one letter per step, nudged by a
+        // little jitter so the rhythm doesn't read as mechanical.
+        let built = 0;
+        shuffle(letters).forEach((ch, i) => {
+          const t = i * IN_EVERY + Math.random() * IN_JITTER;
+          ch.style.setProperty('--in', `${t}ms`);
+          built = Math.max(built, t + IN_DUR);
+        });
+
+        // The hold starts once the last letter is fully in.
+        let total = 0;
+        shuffle(letters).forEach((ch, i) => {
+          const t = built + HOLD + i * OUT_EVERY + Math.random() * OUT_JITTER;
+          ch.style.setProperty('--out', `${t}ms`);
+          total = Math.max(total, t + OUT_DUR);
+        });
+
+        el.style.setProperty('--in-dur', `${IN_DUR}ms`);
+        el.style.setProperty('--out-dur', `${OUT_DUR}ms`);
+        el.style.setProperty('--total', `${total}ms`);
+      },
+    },
+    swap: {
+      // Flips the column and the light chip between the two light colours,
+      // and leaves them there until the next click.
+      toggle(trigger) {
+        const swapped = document.body.classList.toggle('is-swapped');
+        trigger.setAttribute('aria-pressed', String(swapped));
+      },
+    },
+    skyline: {
+      cls: 'is-drawing', animation: 'skyline-draw', moves: false,
+      targets: () => [skyline],
+      prepare([path]) {
+        // Both values are in the drawing's 200-wide units, which the SVG
+        // stretches to the outline's width. The dash has to span the whole
+        // path; the stroke is scaled back so it lands at the same on-screen
+        // weight as the outline's border, read from the page rather than
+        // repeated here.
+        const unitsPerPx = 200 / path.ownerSVGElement.clientWidth;
+        const hairline = parseFloat(getComputedStyle(outline).borderTopWidth);
+        path.style.setProperty('--len', `${path.getTotalLength()}px`);
+        path.style.setProperty('--stroke', `${hairline * unitsPerPx}px`);
+      },
+    },
+    orbit: {
+      cls: 'is-orbiting', animation: 'swatch-orbit', moves: true,
+      // Every chip but the ink one — minus the pink chip if it's mid-loop,
+      // which sits this orbit out rather than being yanked off its path.
+      targets: () => chips.filter((li) => li !== inkChip && !li.classList.contains('is-looping')),
+      prepare(targets) {
+        // The pivot is the ink chip's centre. The row's vanishing point goes
+        // there, and each chip learns how far it sits from it. The orbital
+        // plane itself comes from the chip's --orbit-tilt, set in the markup.
+        const row = chipRow.getBoundingClientRect();
+        const ink = inkChip.getBoundingClientRect();
+        const pivotX = ink.left + ink.width / 2;
+        chipRow.style.setProperty('--pivot-x', `${pivotX - row.left}px`);
+        for (const li of targets) {
+          const r = li.getBoundingClientRect();
+          li.style.setProperty('--to-pivot', `${pivotX - (r.left + r.width / 2)}px`);
+        }
+      },
+    },
+  };
+
+  // One listener for every effect. It clears the class from the element whose
+  // animation just ended, matched by animation name, so an animation ending
+  // inside something else — a click dot in its chip, a letter or the forest
+  // in the card — never ends its container's run.
+  const effectByAnimation = Object.fromEntries(
+    Object.values(effects).filter((fx) => fx.animation).map((fx) => [fx.animation, fx]),
+  );
+  document.addEventListener('animationend', (e) => {
+    const fx = effectByAnimation[e.animationName];
+    if (fx) e.target.classList.remove(fx.cls);
+  });
+
+  for (const trigger of document.querySelectorAll('.swatch-trigger')) {
+    trigger.addEventListener('click', () => {
+      // A fresh dot per click, so quick repeat clicks each get their own mark.
+      const pip = document.createElement('span');
+      pip.className = 'pip';
+      pip.addEventListener('animationend', () => pip.remove());
+      trigger.append(pip);
+
+      const fx = effects[trigger.dataset.effect];
+      if (fx.toggle) return fx.toggle(trigger);
+      if (fx.moves && reduceMotion.matches) return;
+      // Let a run in progress finish; restarting would snap it back to the start.
+      if (document.querySelector(`.${fx.cls}`) || fx.blocked?.()) return;
+      const targets = fx.targets();
+      fx.prepare?.(targets);
+      for (const el of targets) el.classList.add(fx.cls);
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
