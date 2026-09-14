@@ -10,19 +10,28 @@
 <!-- Three-bar motif as favicon: gold, rust, pink -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FDFCF7'/%3E%3Crect x='12' y='5' width='18' height='6' rx='1' fill='%23F4C21B'/%3E%3Crect x='2' y='13' width='28' height='6' rx='1' fill='%238E2B22'/%3E%3Crect x='7' y='21' width='23' height='6' rx='1' fill='%23E93B7A'/%3E%3C/svg%3E">
 
-<!-- IBM Plex Mono Bold, for the name the rust chip writes onto the card. -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@700&display=swap">
-
 <style>
 /* ───────────────────────────────────────────────
    Tokens — from the style tile.
    Only IBM Plex Mono Bold is loaded, for the
    name the rust chip writes on the card. The
-   other stacks are declared but not loaded yet;
-   when more copy arrives, widen the font link:
-   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;700&display=swap">
+   other stacks are declared but not loaded yet.
    ─────────────────────────────────────────────── */
+
+/* Self-hosted rather than linked from Google Fonts. A Google stylesheet in
+   <head> blocks the first paint while a separate server is contacted, for
+   a face that isn't visible until the rust chip is clicked. This is the
+   Latin subset Google itself serves, unchanged; IBM Plex is under the SIL
+   Open Font License, whose text sits beside the file as the licence
+   requires. `swap` means text never waits on it. When more faces are
+   needed, add them the same way rather than bringing back the link. */
+@font-face{
+  font-family:'IBM Plex Mono';
+  font-style:normal;
+  font-weight:700;
+  font-display:swap;
+  src:url("assets/fonts/ibm-plex-mono-700-latin.woff2") format("woff2");
+}
 :root{
   --gold:#F4C21B;
   --green:#1C6B4E;
@@ -359,10 +368,27 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
 
 /* ── Motion ── the ball is never quite still ── */
 @media (prefers-reduced-motion:no-preference){
-  .stage{animation:rise .9s cubic-bezier(.2,.7,.3,1) both}
+  /* Kept short: everything on the stage starts invisible, so the length of
+     this fade is time a visitor looks at an empty page. */
+  .stage{animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
   .roux{animation:bob 6s ease-in-out 1s infinite}
   /* No overshoot in the easing, so a chip never passes its ±15° / ±15%. */
   .swatches li::before{transition:transform .22s cubic-bezier(.2,.7,.3,1), background-color .6s ease}
+
+  /* Idle nudge: a small hop and wobble that hints the chips can be
+     played with. The script picks the chip and a --nudge-dir of 1 or -1 so
+     the wobble leans either way. It animates the separate `translate` and
+     `rotate` properties of the colour layer, which stack with the hover
+     tilt on `transform` rather than replacing it, and it stays off the
+     <li>, whose transform belongs to the pink loop and the orbit. */
+  .swatches li.is-nudging::before{animation:chip-nudge .7s ease-in-out}
+  @keyframes chip-nudge{
+    0%  {translate:0 0;    rotate:0deg}
+    30% {translate:0 -4px; rotate:calc(-8deg * var(--nudge-dir))}
+    60% {translate:0 0;    rotate:calc(5deg * var(--nudge-dir))}
+    80% {                  rotate:calc(-2deg * var(--nudge-dir))}
+    100%{translate:0 0;    rotate:0deg}
+  }
 
   /* One full turn about a vertical axis 8% left of centre. The axis is
      offset with a translate pair rather than transform-origin, so the
@@ -480,8 +506,17 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
           <path d="M0 80 H5 V60 H15 V80 H18 V42 H22 V33 H31 V42 H35 V80 H38 V63 L44 55 L50 63 V80 H53 V37 H56 V29 L59.5 12 L63 29 V37 H66 V80 H70 V66 H73 V58 H79 V66 H84 V80 H87 V54 A8 8 0 0 1 103 54 V80 H106 V45 H109 V24 V45 H115 V80 H118 V51 H122 V46 H128 V51 H132 V80 H135 V47 L149 38 V80 H152 V61 H157 V53 H163 V61 H167 V80 H170 V35 H175 V21 V35 H180 V80 H183 V65 H194 V80 H200"/>
         </svg>
       </div>
+      <!-- The browser picks the smallest file that's sharp on the screen in
+           hand. `sizes` restates Roux's displayed width from the CSS: on
+           desktop the card is 620px and he is 104% of its 310px height at a
+           2:3 aspect, 215px wide; at 760px and below the card is the
+           viewport less 40px of padding and he is 90% of its height, 0.3 of
+           its width. So 480w covers 2x screens everywhere, and 800w is for
+           denser ones. If his size in the CSS changes, update this too. -->
       <img class="roux"
-           src="assets/roux-sketch.webp"
+           src="assets/roux-sketch-800.webp"
+           srcset="assets/roux-sketch-480.webp 480w, assets/roux-sketch-800.webp 800w"
+           sizes="(max-width: 760px) calc((100vw - 40px) * 0.3), 215px"
            width="800" height="1200"
            alt="Roux, a gravy-boat robot with a whisk for one hand, balancing on a ball."
            fetchpriority="high" decoding="async">
@@ -650,8 +685,45 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     if (fx) e.target.classList.remove(fx.cls);
   });
 
+  // Idle nudge: every two to three seconds, one chip — never the same one
+  // twice running — gives a small hop, so the row reads as something to try.
+  // It skips a beat while the pointer is over the row (someone is already
+  // exploring), while any effect is mid-run, and while the tab is hidden. It
+  // stops for good after the first chip click, when the hint has done its
+  // job; motion that repeats with no end should be stoppable, and this is
+  // how. Visitors with reduced motion on never see it.
+  const busy = '.is-spinning, .is-showing, .is-writing, .is-drawing, .is-looping, .is-orbiting';
+  let nudgeTimer = null;
+  let lastNudged = null;
+
+  const nudge = () => {
+    const idle = !document.hidden && !chipRow.matches(':hover') && !document.querySelector(busy);
+    if (idle && !reduceMotion.matches) {
+      const choices = chips.filter((li) => li !== lastNudged);
+      const li = choices[Math.floor(Math.random() * choices.length)];
+      li.style.setProperty('--nudge-dir', Math.random() < 0.5 ? '-1' : '1');
+      li.classList.add('is-nudging');
+      lastNudged = li;
+    }
+    nudgeTimer = setTimeout(nudge, 2000 + Math.random() * 1000);
+  };
+  const stopNudging = () => {
+    clearTimeout(nudgeTimer);
+    nudgeTimer = null;
+  };
+
+  document.addEventListener('animationend', (e) => {
+    // Fired from the chip's ::before, so the target is the <li> itself.
+    if (e.animationName === 'chip-nudge') e.target.classList.remove('is-nudging');
+  });
+
+  // The first nudge waits for the page's entrance to finish.
+  nudgeTimer = setTimeout(nudge, 2500);
+
   for (const trigger of document.querySelectorAll('.swatch-trigger')) {
     trigger.addEventListener('click', () => {
+      stopNudging();
+
       // A fresh dot per click, so quick repeat clicks each get their own mark.
       const pip = document.createElement('span');
       pip.className = 'pip';

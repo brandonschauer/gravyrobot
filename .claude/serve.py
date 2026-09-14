@@ -2,6 +2,7 @@ import os, functools, http.server, socketserver
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 http.server.SimpleHTTPRequestHandler.extensions_map.setdefault(".webp", "image/webp")
+http.server.SimpleHTTPRequestHandler.extensions_map.setdefault(".woff2", "font/woff2")
 Handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=ROOT)
 socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("127.0.0.1", 4173), Handler) as httpd:
