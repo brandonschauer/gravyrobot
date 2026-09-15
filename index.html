@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
+<!-- Marks that JavaScript is running, before anything paints. The staged
+     entrance only hides Roux and the chips under .js, so without script
+     they're simply there. -->
+<script>document.documentElement.classList.add('js')</script>
 <title>Gravy Robot</title>
 <meta name="description" content="Something is being made.">
 
@@ -117,8 +121,7 @@ body{
 
    Offset with `left`, not a negative margin: a negative margin on a
    centred flex item shifts it only half as far, because centring
-   compensates for the smaller outer width. `left` also leaves
-   `transform` free for the entrance animation. */
+   compensates for the smaller outer width. */
 .stage{
   position:relative;
   width:min(var(--stage),100%);
@@ -217,6 +220,41 @@ body{
   width:auto;
   display:block;
 }
+
+/* ── Entrance ──
+   In order: the background, column, card and outline are there at the
+   first paint, with nothing held back; Roux fades in once his image has
+   actually arrived; then the chips come in from the right, one after
+   another, before the idle hops begin. The script drives the steps by
+   adding .is-in to Roux, then .has-entered to the row, which
+   stays; .is-settled follows once the last chip is home. */
+.js .roux{opacity:0;transition:opacity .5s ease}
+.js .roux.is-in{opacity:1}
+
+/* The chips wait off to the right, a viewport's width away, which clears
+   the screen from any slot (the page clips its edges, so no scrollbar).
+   Each slides home on its own --i step of delay, gold first, so the row
+   arrives strung out and bunches into place. This moves the separate
+   `translate` property of the <li>, leaving `transform` to the pink loop
+   and the orbit and `animation` free for them too. The row ignores the
+   pointer until it has settled.
+   With reduced motion on, the same order holds but the chips fade in
+   where they sit instead of travelling. */
+@media (prefers-reduced-motion:no-preference){
+  .js .swatches li{translate:100vw 0}
+  .js .swatches.has-entered li{
+    translate:0 0;
+    transition:translate .9s cubic-bezier(.16,1,.3,1) calc(var(--i) * 70ms);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .js .swatches li{opacity:0}
+  .js .swatches.has-entered li{
+    opacity:1;
+    transition:opacity .4s ease calc(var(--i) * 70ms);
+  }
+}
+.js .swatches:not(.is-settled){pointer-events:none}
 
 /* ── Palette ── */
 .swatches{
@@ -368,9 +406,6 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
 
 /* ── Motion ── the ball is never quite still ── */
 @media (prefers-reduced-motion:no-preference){
-  /* Kept short: everything on the stage starts invisible, so the length of
-     this fade is time a visitor looks at an empty page. */
-  .stage{animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
   .roux{animation:bob 6s ease-in-out 1s infinite}
   /* No overshoot in the easing, so a chip never passes its ±15° / ±15%. */
   .swatches li::before{transition:transform .22s cubic-bezier(.2,.7,.3,1), background-color .6s ease}
@@ -452,10 +487,6 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     42% {transform:translateY(var(--fly-out)); animation-timing-function:step-end}
     50% {transform:translateY(var(--fly-in));  animation-timing-function:cubic-bezier(0,.55,.45,1)}
     100%{transform:translateY(0)}
-  }
-  @keyframes rise{
-    from{opacity:0;transform:translateY(14px)}
-    to{opacity:1;transform:none}
   }
   @keyframes bob{
     0%,100%{transform:translateY(0) rotate(0deg)}
@@ -696,7 +727,10 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   let nudgeTimer = null;
   let lastNudged = null;
 
+  let nudgesStopped = false;
+
   const nudge = () => {
+    if (nudgesStopped) return;
     const idle = !document.hidden && !chipRow.matches(':hover') && !document.querySelector(busy);
     if (idle && !reduceMotion.matches) {
       const choices = chips.filter((li) => li !== lastNudged);
@@ -708,6 +742,7 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     nudgeTimer = setTimeout(nudge, 2000 + Math.random() * 1000);
   };
   const stopNudging = () => {
+    nudgesStopped = true;
     clearTimeout(nudgeTimer);
     nudgeTimer = null;
   };
@@ -717,11 +752,49 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     if (e.animationName === 'chip-nudge') e.target.classList.remove('is-nudging');
   });
 
-  // The first nudge waits for the page's entrance to finish.
-  nudgeTimer = setTimeout(nudge, 2500);
+  // Entrance. The card and outline are already painted; this brings in Roux,
+  // then the chips, then the hops. Roux waits for his image to be decoded,
+  // so a slow connection never shows him popping in mid-fade, but also for a
+  // short beat, so even from cache he visibly arrives after the card.
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const roux = document.querySelector('.roux');
+  const ROUX_BEAT = 250;     // card on its own before Roux
+  const CHIPS_AFTER = 350;   // Roux most of the way in before the chips move
+  const FIRST_HOP = 1200;    // chips at rest a moment before the first hop
+
+  chips.forEach((li, i) => li.style.setProperty('--i', i));
+
+  // Resolves when the last chip is home, however it got there.
+  const lastChipHome = () => new Promise((resolve) => {
+    chips.at(-1).addEventListener('transitionend', function home(e) {
+      // Only the chip's own arrival; its colour layer's hover and swap
+      // transitions end on the same element, from ::before.
+      if (e.pseudoElement || (e.propertyName !== 'translate' && e.propertyName !== 'opacity')) return;
+      e.currentTarget.removeEventListener('transitionend', home);
+      resolve();
+    });
+  });
+
+  (async () => {
+    await Promise.all([roux.decode().catch(() => {}), wait(ROUX_BEAT)]);
+    roux.classList.add('is-in');
+    await wait(CHIPS_AFTER);
+    const home = lastChipHome();
+    chipRow.classList.add('has-entered');
+    // If the last chip's transition never reports an end (a cancelled
+    // transition sends none), settle anyway once it should be done, rather
+    // than leave the row ignoring clicks for good.
+    const arrivalMs = (chips.length - 1) * 70 + 900;
+    await Promise.race([home, wait(arrivalMs + 500)]);
+    chipRow.classList.add('is-settled');
+    nudgeTimer = setTimeout(nudge, FIRST_HOP);
+  })();
 
   for (const trigger of document.querySelectorAll('.swatch-trigger')) {
     trigger.addEventListener('click', () => {
+      // Still arriving: the row ignores the pointer, and this covers the
+      // keyboard too.
+      if (!chipRow.classList.contains('is-settled')) return;
       stopNudging();
 
       // A fresh dot per click, so quick repeat clicks each get their own mark.
