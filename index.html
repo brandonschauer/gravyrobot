@@ -510,7 +510,9 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
 /* Very short landscape windows: keep the card from eating the viewport. */
 @media (max-height:520px) and (min-width:761px){
   .page{padding-top:32px}
-  .stage{width:min(520px,100%)}
+  /* Shrink through the token, not `width`, so the stage's left offset
+     recomputes and the card keeps its bleed past the column. */
+  :root{--stage:520px}
 }
 </style>
 </head>
@@ -788,6 +790,10 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     await Promise.race([home, wait(arrivalMs + 500)]);
     chipRow.classList.add('is-settled');
     nudgeTimer = setTimeout(nudge, FIRST_HOP);
+    // Fetch the name's face now that the entrance is done, so the first
+    // write doesn't start in the fallback and swap faces mid-run. Nothing
+    // on the card uses it before then, so the browser wouldn't on its own.
+    document.fonts.load('700 1em "IBM Plex Mono"').catch(() => {});
   })();
 
   for (const trigger of document.querySelectorAll('.swatch-trigger')) {

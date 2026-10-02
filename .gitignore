@@ -12,5 +12,8 @@
 *.swp
 *~
 
+# Full-size source art. Kept local: anything committed is public on the site.
+art-source/
+
 # Claude Code local overrides (keep .claude/settings.json tracked)
 .claude/settings.local.json

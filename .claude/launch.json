@@ -5,7 +5,7 @@
       "name": "gravyrobot",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
-        "/Users/bschauer/Documents/code/gravyrobot/.claude/serve.py"
+        ".claude/serve.py"
       ],
       "port": 4173
     }
