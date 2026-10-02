@@ -314,20 +314,24 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   .swatches li:hover::before{transform:rotate(var(--r)) scale(var(--s))}
 }
 
-/* Clickable chips carry a button laid over their own swatch: same hit area,
-   so the hover tilt above still comes from the <li>. */
+/* Clickable chips carry a button laid over their own swatch, reaching 5px
+   past it on every side: half the 11px gap, so neighbours' hit areas meet
+   but never overlap. That makes a 20px phone chip a 30px target. The
+   button sits inside the <li>, so hovering its margin still counts as
+   hovering the <li>, and the tilt above still comes from there. */
 .swatch-trigger{
   position:absolute;
-  inset:0;
+  inset:-5px;
   margin:0;
   padding:0;
   border:0;
-  border-radius:5px;
+  border-radius:8px;
   background:transparent;
   cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
-.swatch-trigger:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+/* Pulled back in, so the ring still sits 3px off the chip itself. */
+.swatch-trigger:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
 
 /* Click mark: a dot in the button's --pip colour that starts solid and fades
    out. Deliberately not behind the reduced-motion gate — it's an opacity
@@ -354,14 +358,17 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
    with the card and turns with it if the spin is running. The mask is drawn
    in a 200x100 box to match the card's fixed 2:1 aspect, so stretching it to
    fit never distorts the trees. A fade rather than movement, so it also runs
-   for visitors who have reduced motion turned on. */
+   for visitors who have reduced motion turned on.
+   The mask is written once, as --forest-mask, and handed to both the
+   prefixed and the standard property, since older Safari wants the prefix. */
 .card-forest{
   position:absolute;
   inset:0;
   border-radius:inherit;
   background:var(--green);
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Crect width='200' height='100' fill='white'/%3E%3Cpath fill='black' d='M12 30.5 19.3 51.5 15.4 51.5 22.6 71.1 17 71.1 26 90.7 14 90.7 14 100.5 10 100.5 10 90.7 -2 90.7 7 71.1 1.4 71.1 8.6 51.5 4.7 51.5ZM37 50.5 42.2 65.5 39.4 65.5 44.6 79.5 40.6 79.5 47 93.5 38.4 93.5 38.4 100.5 35.6 100.5 35.6 93.5 27 93.5 33.4 79.5 29.4 79.5 34.6 65.5 31.8 65.5ZM62 18.5 70.5 43.1 65.9 43.1 74.5 66.1 67.9 66.1 78.4 89 64.3 89 64.3 100.5 59.7 100.5 59.7 89 45.6 89 56.1 66.1 49.5 66.1 58.1 43.1 53.5 43.1ZM87 44.5 92.8 61.3 89.7 61.3 95.5 77 91 77 98.2 92.7 88.6 92.7 88.6 100.5 85.4 100.5 85.4 92.7 75.8 92.7 83 77 78.5 77 84.3 61.3 81.2 61.3ZM112 26.5 119.7 48.7 115.6 48.7 123.2 69.4 117.3 69.4 126.8 90.1 114.1 90.1 114.1 100.5 109.9 100.5 109.9 90.1 97.2 90.1 106.7 69.4 100.8 69.4 108.4 48.7 104.3 48.7ZM137 52.5 142 66.9 139.3 66.9 144.3 80.3 140.5 80.3 146.6 93.8 138.3 93.8 138.3 100.5 135.7 100.5 135.7 93.8 127.4 93.8 133.5 80.3 129.7 80.3 134.7 66.9 132 66.9ZM162 20.5 170.3 44.5 165.8 44.5 174.2 66.9 167.8 66.9 178 89.3 164.2 89.3 164.2 100.5 159.8 100.5 159.8 89.3 146 89.3 156.2 66.9 149.8 66.9 158.2 44.5 153.7 44.5ZM187 42.5 193 59.9 189.8 59.9 195.8 76.1 191.2 76.1 198.6 92.4 188.6 92.4 188.6 100.5 185.4 100.5 185.4 92.4 175.4 92.4 182.8 76.1 178.2 76.1 184.2 59.9 181 59.9Z'/%3E%3C/mask%3E%3Crect width='200' height='100' mask='url(%23m)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Crect width='200' height='100' fill='white'/%3E%3Cpath fill='black' d='M12 30.5 19.3 51.5 15.4 51.5 22.6 71.1 17 71.1 26 90.7 14 90.7 14 100.5 10 100.5 10 90.7 -2 90.7 7 71.1 1.4 71.1 8.6 51.5 4.7 51.5ZM37 50.5 42.2 65.5 39.4 65.5 44.6 79.5 40.6 79.5 47 93.5 38.4 93.5 38.4 100.5 35.6 100.5 35.6 93.5 27 93.5 33.4 79.5 29.4 79.5 34.6 65.5 31.8 65.5ZM62 18.5 70.5 43.1 65.9 43.1 74.5 66.1 67.9 66.1 78.4 89 64.3 89 64.3 100.5 59.7 100.5 59.7 89 45.6 89 56.1 66.1 49.5 66.1 58.1 43.1 53.5 43.1ZM87 44.5 92.8 61.3 89.7 61.3 95.5 77 91 77 98.2 92.7 88.6 92.7 88.6 100.5 85.4 100.5 85.4 92.7 75.8 92.7 83 77 78.5 77 84.3 61.3 81.2 61.3ZM112 26.5 119.7 48.7 115.6 48.7 123.2 69.4 117.3 69.4 126.8 90.1 114.1 90.1 114.1 100.5 109.9 100.5 109.9 90.1 97.2 90.1 106.7 69.4 100.8 69.4 108.4 48.7 104.3 48.7ZM137 52.5 142 66.9 139.3 66.9 144.3 80.3 140.5 80.3 146.6 93.8 138.3 93.8 138.3 100.5 135.7 100.5 135.7 93.8 127.4 93.8 133.5 80.3 129.7 80.3 134.7 66.9 132 66.9ZM162 20.5 170.3 44.5 165.8 44.5 174.2 66.9 167.8 66.9 178 89.3 164.2 89.3 164.2 100.5 159.8 100.5 159.8 89.3 146 89.3 156.2 66.9 149.8 66.9 158.2 44.5 153.7 44.5ZM187 42.5 193 59.9 189.8 59.9 195.8 76.1 191.2 76.1 198.6 92.4 188.6 92.4 188.6 100.5 185.4 100.5 185.4 92.4 175.4 92.4 182.8 76.1 178.2 76.1 184.2 59.9 181 59.9Z'/%3E%3C/mask%3E%3Crect width='200' height='100' mask='url(%23m)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  -webkit-mask:var(--forest-mask);
+  mask:var(--forest-mask);
+  --forest-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Crect width='200' height='100' fill='white'/%3E%3Cpath fill='black' d='M12 30.5 19.3 51.5 15.4 51.5 22.6 71.1 17 71.1 26 90.7 14 90.7 14 100.5 10 100.5 10 90.7 -2 90.7 7 71.1 1.4 71.1 8.6 51.5 4.7 51.5ZM37 50.5 42.2 65.5 39.4 65.5 44.6 79.5 40.6 79.5 47 93.5 38.4 93.5 38.4 100.5 35.6 100.5 35.6 93.5 27 93.5 33.4 79.5 29.4 79.5 34.6 65.5 31.8 65.5ZM62 18.5 70.5 43.1 65.9 43.1 74.5 66.1 67.9 66.1 78.4 89 64.3 89 64.3 100.5 59.7 100.5 59.7 89 45.6 89 56.1 66.1 49.5 66.1 58.1 43.1 53.5 43.1ZM87 44.5 92.8 61.3 89.7 61.3 95.5 77 91 77 98.2 92.7 88.6 92.7 88.6 100.5 85.4 100.5 85.4 92.7 75.8 92.7 83 77 78.5 77 84.3 61.3 81.2 61.3ZM112 26.5 119.7 48.7 115.6 48.7 123.2 69.4 117.3 69.4 126.8 90.1 114.1 90.1 114.1 100.5 109.9 100.5 109.9 90.1 97.2 90.1 106.7 69.4 100.8 69.4 108.4 48.7 104.3 48.7ZM137 52.5 142 66.9 139.3 66.9 144.3 80.3 140.5 80.3 146.6 93.8 138.3 93.8 138.3 100.5 135.7 100.5 135.7 93.8 127.4 93.8 133.5 80.3 129.7 80.3 134.7 66.9 132 66.9ZM162 20.5 170.3 44.5 165.8 44.5 174.2 66.9 167.8 66.9 178 89.3 164.2 89.3 164.2 100.5 159.8 100.5 159.8 89.3 146 89.3 156.2 66.9 149.8 66.9 158.2 44.5 153.7 44.5ZM187 42.5 193 59.9 189.8 59.9 195.8 76.1 191.2 76.1 198.6 92.4 188.6 92.4 188.6 100.5 185.4 100.5 185.4 92.4 175.4 92.4 182.8 76.1 178.2 76.1 184.2 59.9 181 59.9Z'/%3E%3C/mask%3E%3Crect width='200' height='100' mask='url(%23m)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   opacity:0;
   pointer-events:none;
 }
@@ -450,16 +457,6 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
     to  {transform:perspective(1800px) rotate(var(--tilt-card)) translateX(-8%) rotateY(360deg) translateX(8%)}
   }
 
-  /* Pink chip: up and out the top of the page, a beat off-screen, then in
-     from the bottom and back into its slot. The script measures --fly-out
-     and --fly-in at click time, since both depend on where the chip sits
-     and how tall the page is. The whole <li> moves, so the button and its
-     click dot travel with it; siblings don't shift, because a transform
-     doesn't affect layout.
-     Per-keyframe easing: accelerate out (0–42%), then a step-end segment
-     that holds the chip above the page and swaps it to below in a single
-     frame (42–50%) so it never flashes across the middle, then decelerate
-     back into place (50–100%). */
   /* Ink chip: the other six orbit it, one full turn each, all landing
      together and slowing into place.
 
@@ -494,6 +491,16 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
                    translateX(calc(-1 * var(--to-pivot))) rotate3d(var(--orbit-axis), calc(-360deg * var(--orbit-dir)))}
   }
 
+  /* Pink chip: up and out the top of the page, a beat off-screen, then in
+     from the bottom and back into its slot. The script measures --fly-out
+     and --fly-in at click time, since both depend on where the chip sits
+     and how tall the page is. The whole <li> moves, so the button and its
+     click dot travel with it; siblings don't shift, because a transform
+     doesn't affect layout.
+     Per-keyframe easing: accelerate out (0–42%), then a step-end segment
+     that holds the chip above the page and swaps it to below in a single
+     frame (42–50%) so it never flashes across the middle, then decelerate
+     back into place (50–100%). */
   .swatches li.is-looping{animation:swatch-loop 1.8s linear}
   @keyframes swatch-loop{
     0%  {transform:translateY(0);              animation-timing-function:cubic-bezier(.55,0,1,.45)}
@@ -504,6 +511,32 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   @keyframes bob{
     0%,100%{transform:translateY(0) rotate(0deg)}
     50%{transform:translateY(-6px) rotate(-.6deg)}
+  }
+}
+
+/* ── Still ── what the moving chips do with reduced motion on ──
+   Each plays a colour or opacity change in place of its movement, with
+   the same class and its own animation name, so the script runs every
+   effect the same way and the media query picks which one plays.
+   Spin: the card shows its pink side, then turns back to gold.
+   Loop: the pink chip vanishes for a beat, then comes back.
+   Orbit: the other six blink in a ripple outward from the ink chip, each
+   waiting its --ripple, which the script sets from its distance. */
+@media (prefers-reduced-motion:reduce){
+  .card-fill.is-spinning{animation:card-flip-still 1.4s ease-in-out}
+  @keyframes card-flip-still{
+    0%,100%{background-color:var(--gold)}
+    35%,65%{background-color:var(--pink)}
+  }
+  .swatches li.is-looping::before{animation:swatch-loop-still 1.8s ease-in-out}
+  @keyframes swatch-loop-still{
+    0%,100%{opacity:1}
+    30%,70%{opacity:0}
+  }
+  .swatches li.is-orbiting::before{animation:swatch-orbit-still .9s ease-in-out var(--ripple)}
+  @keyframes swatch-orbit-still{
+    0%,100%{opacity:1}
+    40%    {opacity:.15}
   }
 }
 
@@ -572,13 +605,13 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
          while the one button inside stays reachable. (aria-hidden on the list
          would hide a focusable control, which assistive tech forbids.) -->
     <ul class="swatches" role="presentation">
-      <li style="--c:#F4C21B; --r:12deg;  --s:1.12; --orbit-tilt:60deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="spin" style="--pip:var(--pink)" aria-label="Spin the card"></button></li>
-      <li style="--c:#1C6B4E; --r:-9deg;  --s:0.90; --orbit-tilt:0deg;   --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="forest" style="--pip:var(--line)" aria-label="Show the forest"></button></li>
-      <li style="--c:#E93B7A; --r:15deg;  --s:0.87; --orbit-tilt:120deg; --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="loop" style="--pip:var(--gold)" aria-label="Send the pink square around"></button></li>
-      <li style="--c:#8E2B22; --r:-14deg; --s:1.15; --orbit-tilt:90deg;  --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="words" style="--pip:var(--pink)" aria-label="Write the name on the card"></button></li>
-      <li style="--c:#181613; --r:6deg;   --s:1.08"><button class="swatch-trigger" type="button" data-effect="orbit" style="--pip:var(--gold)" aria-label="Set the squares orbiting"></button></li>
-      <li style="--c:#5a5650; --r:-11deg; --s:0.92; --orbit-tilt:30deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="skyline" style="--pip:var(--pink)" aria-label="Draw the skyline"></button></li>
-      <li style="--c:#E7E1D0; --r:8deg;   --s:0.86; --orbit-tilt:150deg; --orbit-dir:-1" class="edge"><button class="swatch-trigger" type="button" data-effect="swap" style="--pip:var(--green)" aria-label="Swap the light colours" aria-pressed="false"></button></li>
+      <li style="--c:var(--gold);  --r:12deg;  --s:1.12; --orbit-tilt:60deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="spin" style="--pip:var(--pink)" aria-label="Spin the card"></button></li>
+      <li style="--c:var(--green); --r:-9deg;  --s:0.90; --orbit-tilt:0deg;   --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="forest" style="--pip:var(--line)" aria-label="Show the forest"></button></li>
+      <li style="--c:var(--pink);  --r:15deg;  --s:0.87; --orbit-tilt:120deg; --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="loop" style="--pip:var(--gold)" aria-label="Send the pink square around"></button></li>
+      <li style="--c:var(--rust);  --r:-14deg; --s:1.15; --orbit-tilt:90deg;  --orbit-dir:-1"><button class="swatch-trigger" type="button" data-effect="words" style="--pip:var(--pink)" aria-label="Write the name on the card"></button></li>
+      <li style="--c:var(--ink);   --r:6deg;   --s:1.08"><button class="swatch-trigger" type="button" data-effect="orbit" style="--pip:var(--gold)" aria-label="Set the squares orbiting"></button></li>
+      <li style="--c:var(--muted); --r:-11deg; --s:0.92; --orbit-tilt:30deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="skyline" style="--pip:var(--pink)" aria-label="Draw the skyline"></button></li>
+      <li style="--c:var(--line);  --r:8deg;   --s:0.86; --orbit-tilt:150deg; --orbit-dir:-1" class="edge"><button class="swatch-trigger" type="button" data-effect="swap" style="--pip:var(--green)" aria-label="Swap the light colours" aria-pressed="false"></button></li>
     </ul>
   </main>
 </div>
@@ -621,15 +654,16 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   // of a CSS animation on one or more elements: the click puts the effect's
   // class on each target, and each target's own animationend takes it off.
   //   targets  the elements to animate this run
-  //   moves    skipped for visitors who have reduced motion on
+  //   still    optional; the animation that plays instead with reduced
+  //            motion on (the CSS picks it; this is so its end is heard)
   //   blocked  optional; true when this run shouldn't start right now
   //   prepare  optional; sets per-run values on the targets before they start
   // A switch is simpler: it has only `toggle`, which flips a lasting state.
   const effects = {
-    spin:   { cls: 'is-spinning', animation: 'card-spin',   moves: true,  targets: () => [card] },
-    forest: { cls: 'is-showing',  animation: 'forest-fade', moves: false, targets: () => [forest] },
+    spin:   { cls: 'is-spinning', animation: 'card-spin', still: 'card-flip-still', targets: () => [card] },
+    forest: { cls: 'is-showing',  animation: 'forest-fade', targets: () => [forest] },
     loop: {
-      cls: 'is-looping', animation: 'swatch-loop', moves: true,
+      cls: 'is-looping', animation: 'swatch-loop', still: 'swatch-loop-still',
       targets: () => [pinkChip],
       // A chip runs one transform animation at a time, and the orbit uses
       // transform too, so the pink loop waits while its chip is orbiting.
@@ -645,7 +679,7 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
       },
     },
     words: {
-      cls: 'is-writing', animation: 'words-clock', moves: false,
+      cls: 'is-writing', animation: 'words-clock',
       targets: () => [words],
       prepare([el]) {
         const IN_EVERY = 75, IN_JITTER = 40, IN_DUR = 120;   // letters pop in quickly
@@ -684,7 +718,7 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
       },
     },
     skyline: {
-      cls: 'is-drawing', animation: 'skyline-draw', moves: false,
+      cls: 'is-drawing', animation: 'skyline-draw',
       targets: () => [skyline],
       prepare([path]) {
         // Both values are in the drawing's 200-wide units, which the SVG
@@ -699,7 +733,7 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
       },
     },
     orbit: {
-      cls: 'is-orbiting', animation: 'swatch-orbit', moves: true,
+      cls: 'is-orbiting', animation: 'swatch-orbit', still: 'swatch-orbit-still',
       // Every chip but the ink one — minus the pink chip if it's mid-loop,
       // which sits this orbit out rather than being yanked off its path.
       targets: () => chips.filter((li) => li !== inkChip && !li.classList.contains('is-looping')),
@@ -714,6 +748,9 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
         for (const li of targets) {
           const r = li.getBoundingClientRect();
           li.style.setProperty('--to-pivot', `${pivotX - (r.left + r.width / 2)}px`);
+          // For the still version: one beat of delay per chip from the ink.
+          const steps = Math.abs(chips.indexOf(li) - chips.indexOf(inkChip));
+          li.style.setProperty('--ripple', `${(steps - 1) * 120}ms`);
         }
       },
     },
@@ -722,9 +759,10 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   // One listener for every effect. It clears the class from the element whose
   // animation just ended, matched by animation name, so an animation ending
   // inside something else — a click dot in its chip, a letter or the forest
-  // in the card — never ends its container's run.
+  // in the card — never ends its container's run. An effect's still version
+  // ends its run the same way.
   const effectByAnimation = Object.fromEntries(
-    Object.values(effects).filter((fx) => fx.animation).map((fx) => [fx.animation, fx]),
+    Object.values(effects).flatMap((fx) => [fx.animation, fx.still].filter(Boolean).map((name) => [name, fx])),
   );
   document.addEventListener('animationend', (e) => {
     const fx = effectByAnimation[e.animationName];
@@ -824,7 +862,6 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
 
       const fx = effects[trigger.dataset.effect];
       if (fx.toggle) return fx.toggle(trigger);
-      if (fx.moves && reduceMotion.matches) return;
       // Let a run in progress finish; restarting would snap it back to the start.
       if (document.querySelector(`.${fx.cls}`) || fx.blocked?.()) return;
       const targets = fx.targets();
