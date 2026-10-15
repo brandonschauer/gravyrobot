@@ -9,7 +9,7 @@
      they're simply there. -->
 <script>document.documentElement.classList.add('js')</script>
 <title>Gravy Robot</title>
-<meta name="description" content="Something is being made.">
+<meta name="description" content="Gravy Robot is a human-centered consultancy.">
 
 <!-- Link previews. iMessage falls back to the page's own image without
      these; most other apps show nothing. The image is drawn by
@@ -540,6 +540,27 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   }
 }
 
+/* ── Note ── a footnote under the chips: system sans, muted, upright, on
+   the chips' own left edge, so it overhangs the column with them. The
+   address is the one thing in ink, underlined in gold. */
+.note{
+  margin:32px 0 0;
+  font-size:13px;
+  line-height:1.65;
+  color:var(--muted);
+}
+.note p{margin:0}
+.note a{
+  color:var(--ink);
+  text-decoration:underline;
+  text-decoration-color:var(--gold);
+  text-decoration-thickness:2px;
+  text-underline-offset:3px;
+  transition:text-decoration-color .2s ease;
+}
+.note a:hover{text-decoration-color:var(--pink)}
+.note a:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
+
 /* ── Narrow ── drop the gutters, let the cream fill ── */
 @media (max-width:760px){
   body{background:var(--bg);transition:background-color .6s ease}
@@ -551,6 +572,7 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
   .roux{right:5%;height:90%}
   .swatches li{width:20px;height:20px}
   .swatches li::before{border-radius:4px}
+  .note{margin-top:28px;font-size:12.5px}
 }
 
 /* Very short landscape windows: keep the card from eating the viewport. */
@@ -613,6 +635,15 @@ body.is-swapped .swatches li.edge::before{background:var(--bg)}
       <li style="--c:var(--muted); --r:-11deg; --s:0.92; --orbit-tilt:30deg;  --orbit-dir:1"><button class="swatch-trigger" type="button" data-effect="skyline" style="--pip:var(--pink)" aria-label="Draw the skyline"></button></li>
       <li style="--c:var(--line);  --r:8deg;   --s:0.86; --orbit-tilt:150deg; --orbit-dir:-1" class="edge"><button class="swatch-trigger" type="button" data-effect="swap" style="--pip:var(--green)" aria-label="Swap the light colours" aria-pressed="false"></button></li>
     </ul>
+
+    <!-- What the page is and how to reach us, in plain text: the line a
+         web-filter reviewer reads to rate the domain. There at the first
+         paint, not held back with the entrance. -->
+    <div class="note">
+      <p>Gravy Robot is a human-centered consultancy.</p>
+      <p>The gravy is still simmering.</p>
+      <p>Want to know when it’s ready? <a href="mailto:hello@gravyrobot.com">hello@gravyrobot.com</a></p>
+    </div>
   </main>
 </div>
 
