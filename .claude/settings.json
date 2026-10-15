@@ -31,7 +31,31 @@
       "Bash(git show:*)",
       "Bash(git branch)",
       "Bash(git remote -v)",
-      "Bash(git config --get:*)"
+      "Bash(git config --get:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git fetch)",
+      "Bash(git fetch origin:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git restore --staged:*)",
+      "Bash(git stash)",
+      "Bash(git stash list)",
+      "Bash(git stash push:*)",
+
+      "Bash(jq:*)"
+    ],
+
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git revert:*)",
+      "Bash(git tag:*)",
+      "Bash(gh:*)",
+      "Edit(./CNAME)"
     ],
 
     "deny": [
@@ -56,7 +80,32 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./**/*.pem)",
-      "Read(./**/id_rsa*)"
+      "Read(./**/id_rsa*)",
+      "Edit(./.git/**)"
+    ]
+  },
+
+  "env": {
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_PAGER": "cat",
+    "PAGER": "cat",
+    "GIT_EDITOR": "true",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking command against git safety rails"
+          }
+        ]
+      }
     ]
   },
 
